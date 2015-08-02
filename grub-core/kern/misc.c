@@ -675,6 +675,7 @@ parse_printf_args (const char *fmt0, struct printf_args *args,
       switch (c)
 	{
 	case 'p':
+	case 'X':
 	case 'x':
 	case 'u':
 	case 'd':
@@ -761,6 +762,7 @@ parse_printf_args (const char *fmt0, struct printf_args *args,
 	continue;
       switch (c)
 	{
+	case 'X':
 	case 'x':
 	case 'u':
 	  args->ptr[curn].type = UNSIGNED_INT + longfmt;
@@ -897,8 +899,9 @@ grub_vsnprintf_real (char *str, grub_size_t max_len, const char *fmt0,
 	case 'p':
 	  write_char (str, &count, max_len, '0');
 	  write_char (str, &count, max_len, 'x');
-	  c = 'x';
 	  /* Fall through. */
+	case 'X':
+	  c = 'x';
 	case 'x':
 	case 'u':
 	case 'd':
