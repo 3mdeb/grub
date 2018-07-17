@@ -43,7 +43,7 @@ if [ "x${GRUB_CONTRIB}" != x ]; then
 fi
 
 UTIL_DEFS='Makefile.util.def Makefile.utilgcry.def'
-CORE_DEFS='grub-core/Makefile.core.def grub-core/Makefile.gcry.def'
+CORE_DEFS='grub-core/Makefile.core.def'
 
 for extra in contrib/*/Makefile.util.def; do
   if test -e "$extra"; then

@@ -352,153 +352,6 @@ kernel = {
   extra_dist = kern/mips/cache_flush.S;
 };
 
-program = {
-  name = grub-emu;
-  mansection = 1;
-
-  emu = kern/emu/full.c;
-  emu_nodist = grub_emu_init.c;
-
-  ldadd = 'kernel.exec$(EXEEXT)';
-  ldadd = '$(MODULE_FILES)';
-  ldadd = 'gnulib/libgnu.a $(LIBINTL) $(LIBUTIL) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
-
-  enable = emu;
-};
-
-program = {
-  name = grub-emu-lite;
-
-  emu = kern/emu/lite.c;
-  emu_nodist = symlist.c;
-
-  ldadd = 'kernel.exec$(EXEEXT)';
-  ldadd = 'gnulib/libgnu.a $(LIBINTL) $(LIBUTIL) $(LIBSDL) $(LIBUSB) $(LIBPCIACCESS) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
-
-  enable = emu;
-};
-
-image = {
-  name = boot;
-  i386_pc = boot/i386/pc/boot.S;
-  i386_qemu = boot/i386/qemu/boot.S;
-  sparc64_ieee1275 = boot/sparc64/ieee1275/boot.S;
-
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
-
-  i386_qemu_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_qemu_ldflags = '$(TARGET_IMG_BASE_LDOPT),$(GRUB_BOOT_MACHINE_LINK_ADDR)';
-  i386_qemu_ccasflags = '-DGRUB_BOOT_MACHINE_LINK_ADDR=$(GRUB_BOOT_MACHINE_LINK_ADDR)';
-
-  sparc64_ieee1275_objcopyflags = '-O a.out-sunos-big';
-  sparc64_ieee1275_ldflags = ' -Wl,-Ttext=0x4000';
-
-  objcopyflags = '-O binary';
-  enable = i386_pc;
-  enable = i386_qemu;
-  enable = sparc64_ieee1275;
-};
-
-image = {
-  name = boot_hybrid;
-  i386_pc = boot/i386/pc/boot.S;
-
-  cppflags = '-DHYBRID_BOOT=1';
-  
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
-
-  objcopyflags = '-O binary';
-  enable = i386_pc;
-};
-
-image = {
-  name = cdboot;
-
-  i386_pc = boot/i386/pc/cdboot.S;
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
-
-  sparc64_ieee1275 = boot/sparc64/ieee1275/boot.S;
-  sparc64_ieee1275_objcopyflags = '-O a.out-sunos-big';
-  sparc64_ieee1275_ldflags = ' -Wl,-Ttext=0x4000';
-  sparc64_ieee1275_cppflags = '-DCDBOOT=1';
-
-  objcopyflags = '-O binary';
-
-  enable = sparc64_ieee1275;
-  enable = i386_pc;
-};
-
-image = {
-  name = pxeboot;
-  i386_pc = boot/i386/pc/pxeboot.S;
-
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x7C00';
-
-  objcopyflags = '-O binary';
-  enable = i386_pc;
-};
-
-image = {
-  name = diskboot;
-  i386_pc = boot/i386/pc/diskboot.S;
-
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x8000';
-
-  sparc64_ieee1275 = boot/sparc64/ieee1275/diskboot.S;
-  sparc64_ieee1275_ldflags = '-Wl,-Ttext=0x4200';
-
-  objcopyflags = '-O binary';
-
-  enable = i386_pc;
-  enable = sparc64_ieee1275;
-};
-
-image = {
-  name = lnxboot;
-  i386_pc = boot/i386/pc/lnxboot.S;
-
-  i386_pc_ldflags = '$(TARGET_IMG_LDFLAGS)';
-  i386_pc_ldflags = '$(TARGET_IMG_BASE_LDOPT),0x6000';
-
-  objcopyflags = '-O binary';
-  enable = i386_pc;
-};
-
-image = {
-  name = xz_decompress;
-  mips = boot/mips/startup_raw.S;
-  common = boot/decompressor/minilib.c;
-  common = boot/decompressor/xz.c;
-  common = lib/xzembed/xz_dec_bcj.c;
-  common = lib/xzembed/xz_dec_lzma2.c;
-  common = lib/xzembed/xz_dec_stream.c;
-  common = kern/compiler-rt.c;
-
-  cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/xzembed -DGRUB_EMBED_DECOMPRESSOR=1';
-
-  objcopyflags = '-O binary';
-  mips_ldflags = '-Wl,-Ttext,$(TARGET_DECOMPRESSOR_LINK_ADDR)';
-  cflags = '-Wno-unreachable-code';
-  enable = mips;
-};
-
-image = {
-  name = none_decompress;
-  mips = boot/mips/startup_raw.S;
-  common = boot/decompressor/none.c;
-
-  cppflags = '-DGRUB_EMBED_DECOMPRESSOR=1';
-
-  objcopyflags = '-O binary';
-  mips_ldflags = '-Wl,-Ttext,$(TARGET_DECOMPRESSOR_LINK_ADDR)';
-  enable = mips;
-};
-
 image = {
   name = lzma_decompress;
   i386_pc = boot/i386/pc/startup_raw.S;
@@ -507,22 +360,6 @@ image = {
   objcopyflags = '-O binary';
   ldflags = '$(TARGET_IMG_LDFLAGS) $(TARGET_IMG_BASE_LDOPT),0x8200';
   enable = i386_pc;
-};
-
-image = {
-  name = fwstart;
-  mips_loongson = boot/mips/loongson/fwstart.S;
-  objcopyflags = '-O binary';
-  ldflags = '-Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
-  enable = mips_loongson;
-};
-
-image = {
-  name = fwstart_fuloong2f;
-  mips_loongson = boot/mips/loongson/fuloong2f.S;
-  objcopyflags = '-O binary';
-  ldflags = '-Wl,-N,-S,-Ttext,0xbfc00000,-Bstatic';
-  enable = mips_loongson;
 };
 
 module = {
@@ -543,64 +380,6 @@ module = {
   enable = x86;
 };
 
-module = {
-  name = lsspd;
-  mips_loongson = commands/mips/loongson/lsspd.c;
-  enable = mips_loongson;
-};
-
-module = {
-  name = usb;
-  common = bus/usb/usb.c;
-  common = bus/usb/usbtrans.c;
-  common = bus/usb/usbhub.c;
-  enable = usb;
-};
-
-module = {
-  name = usbserial_common;
-  common = bus/usb/serial/common.c;
-  enable = usb;
-};
-
-module = {
-  name = usbserial_pl2303;
-  common = bus/usb/serial/pl2303.c;
-  enable = usb;
-};
-
-module = {
-  name = usbserial_ftdi;
-  common = bus/usb/serial/ftdi.c;
-  enable = usb;
-};
-
-module = {
-  name = usbserial_usbdebug;
-  common = bus/usb/serial/usbdebug_late.c;
-  enable = usb;
-};
-
-module = {
-  name = uhci;
-  common = bus/usb/uhci.c;
-  enable = pci;
-};
-
-module = {
-  name = ohci;
-  common = bus/usb/ohci.c;
-  enable = pci;
-};
-
-module = {
-  name = ehci;
-  common = bus/usb/ehci.c;
-  arm_coreboot = bus/usb/ehci-fdt.c;
-  pci = bus/usb/ehci-pci.c;
-  enable = pci;
-  enable = arm_coreboot;
-};
 
 module = {
   name = pci;
@@ -620,29 +399,6 @@ module = {
   enable = x86;
   enable = mips_loongson;
   enable = mips_qemu_mips;
-};
-
-module = {
-  name = emupci;
-  common = bus/emu/pci.c;
-  common = commands/lspci.c;
-
-  enable = emu;
-  condition = COND_GRUB_EMU_PCI;
-};
-
-module = {
-  name = lsdev;
-  common = commands/arc/lsdev.c;
-
-  enable = mips_arc;
-};
-
-module = {
-  name = lsxen;
-  common = commands/xen/lsxen.c;
-
-  enable = xen;
 };
 
 module = {
@@ -727,42 +483,6 @@ module = {
 };
 
 module = {
-  name = lsefisystab;
-
-  common = commands/efi/lsefisystab.c;
-
-  enable = efi;
-};
-
-module = {
-  name = lssal;
-
-  common = commands/efi/lssal.c;
-
-  enable = efi;
-};
-
-module = {
-  name = lsefimmap;
-
-  common = commands/efi/lsefimmap.c;
-
-  enable = efi;
-};
-
-module = {
-  name = lsefi;
-  common = commands/efi/lsefi.c;
-  enable = efi;
-};
-
-module = {
-  name = efifwsetup;
-  efi = commands/efi/efifwsetup.c;
-  enable = efi;
-};
-
-module = {
   name = blocklist;
   common = commands/blocklist.c;
 };
@@ -812,14 +532,6 @@ module = {
 };
 
 module = {
-  name = drivemap;
-
-  i386_pc = commands/i386/pc/drivemap.c;
-  i386_pc = commands/i386/pc/drivemap_int13h.S;
-  enable = i386_pc;
-};
-
-module = {
   name = echo;
   common = commands/echo.c;
 };
@@ -834,18 +546,6 @@ module = {
   common = commands/extcmd.c;
   common = lib/arg.c;
   enable = terminfomodule;
-};
-
-module = {
-  name = fixvideo;
-  common = commands/efi/fixvideo.c;
-  enable = i386_efi;
-  enable = x86_64_efi;
-};
-
-module = {
-  name = gptsync;
-  common = commands/gptsync.c;
 };
 
 module = {
@@ -889,20 +589,6 @@ module = {
 };
 
 module = {
-  name = verify;
-  common = commands/verify.c;
-  cflags = '$(CFLAGS_POSIX)';
-  cppflags = '-I$(srcdir)/lib/posix_wrap';
-};
-
-module = {
-  name = hdparm;
-  common = commands/hdparm.c;
-  enable = pci;
-  enable = mips_qemu_mips;
-};
-
-module = {
   name = help;
   common = commands/help.c;
 };
@@ -917,14 +603,6 @@ module = {
   name = keystatus;
   common = commands/keystatus.c;
 };
-
-module = {
-  name = loadbios;
-  common = commands/efi/loadbios.c;
-  enable = i386_efi;
-  enable = x86_64_efi;
-};
-
 module = {
   name = loadenv;
   common = commands/loadenv.c;
@@ -961,16 +639,6 @@ module = {
 module = {
   name = parttool;
   common = commands/parttool.c;
-};
-
-module = {
-  name = password;
-  common = commands/password.c;
-};
-
-module = {
-  name = password_pbkdf2;
-  common = commands/password_pbkdf2.c;
 };
 
 module = {
@@ -1040,19 +708,6 @@ module = {
 };
 
 module = {
-  name = suspend;
-  ieee1275 = commands/ieee1275/suspend.c;
-  enable = i386_ieee1275;
-  enable = powerpc_ieee1275;
-};
-
-module = {
-  name = escc;
-  ieee1275 = term/ieee1275/escc.c;
-  enable = powerpc_ieee1275;
-};
-
-module = {
   name = terminal;
   common = commands/terminal.c;
 };
@@ -1068,75 +723,8 @@ module = {
 };
 
 module = {
-  name = usbtest;
-  common = commands/usbtest.c;
-  enable = usb;
-};
-
-module = {
-  name = videoinfo;
-  common = commands/videoinfo.c;
-};
-
-module = {
-  name = videotest;
-  common = commands/videotest.c;
-};
-
-module = {
-  name = xnu_uuid;
-  common = commands/xnu_uuid.c;
-};
-
-module = {
-  name = dm_nv;
-  common = disk/dmraid_nvidia.c;
-};
-
-module = {
   name = loopback;
   common = disk/loopback.c;
-};
-
-module = {
-  name = cryptodisk;
-  common = disk/cryptodisk.c;
-};
-
-module = {
-  name = luks;
-  common = disk/luks.c;
-  common = disk/AFSplitter.c;
-};
-
-module = {
-  name = geli;
-  common = disk/geli.c;
-};
-
-module = {
-  name = lvm;
-  common = disk/lvm.c;
-};
-
-module = {
-  name = ldm;
-  common = disk/ldm.c;
-};
-
-module = {
-  name = mdraid09;
-  common = disk/mdraid_linux.c;
-};
-
-module = {
-  name = mdraid09_be;
-  common = disk/mdraid_linux_be.c;
-};
-
-module = {
-  name = mdraid1x;
-  common = disk/mdraid1x_linux.c;
 };
 
 module = {
@@ -1145,128 +733,13 @@ module = {
 };
 
 module = {
-  name = raid5rec;
-  common = disk/raid5_recover.c;
-};
-
-module = {
-  name = raid6rec;
-  common = disk/raid6_recover.c;
-};
-
-module = {
-  name = scsi;
-  common = disk/scsi.c;
-};
-
-module = {
   name = memdisk;
   common = disk/memdisk.c;
 };
 
 module = {
-  name = ata;
-  common = disk/ata.c;
-  enable = pci;
-  enable = mips_qemu_mips;
-};
-
-module = {
-  name = ahci;
-  common = disk/ahci.c;
-  enable = pci;
-};
-
-module = {
-  name = pata;
-  common = disk/pata.c;
-  enable = pci;
-  enable = mips_qemu_mips;
-};
-
-module = {
-  name = biosdisk;
-  i386_pc = disk/i386/pc/biosdisk.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = usbms;
-  common = disk/usbms.c;
-  enable = usb;
-};
-
-module = {
-  name = nand;
-  ieee1275 = disk/ieee1275/nand.c;
-  enable = i386_ieee1275;
-};
-
-module = {
-  name = efiemu;
-  common = efiemu/main.c;
-  common = efiemu/i386/loadcore32.c;
-  common = efiemu/i386/loadcore64.c;
-  i386_pc = efiemu/i386/pc/cfgtables.c;
-  i386_coreboot = efiemu/i386/pc/cfgtables.c;
-  i386_multiboot = efiemu/i386/pc/cfgtables.c;
-  i386_ieee1275 = efiemu/i386/nocfgtables.c;
-  i386_qemu = efiemu/i386/nocfgtables.c;
-  common = efiemu/mm.c;
-  common = efiemu/loadcore_common.c;
-  common = efiemu/symbols.c;
-  common = efiemu/loadcore32.c;
-  common = efiemu/loadcore64.c;
-  common = efiemu/prepare32.c;
-  common = efiemu/prepare64.c;
-  common = efiemu/pnvram.c;
-  common = efiemu/i386/coredetect.c;
-
-  extra_dist = efiemu/prepare.c;
-  extra_dist = efiemu/loadcore.c;
-  extra_dist = efiemu/runtime/efiemu.S;
-  extra_dist = efiemu/runtime/efiemu.c;
-
-  enable = i386_pc;
-  enable = i386_coreboot;
-  enable = i386_ieee1275;
-  enable = i386_multiboot;
-  enable = i386_qemu;
-};
-
-module = {
-  name = font;
-  common = font/font.c;
-  common = font/font_cmd.c;
-  enable = videomodules;
-};
-
-module = {
   name = procfs;
   common = fs/proc.c;
-};
-
-module = {
-  name = affs;
-  common = fs/affs.c;
-};
-
-module = {
-  name = afs;
-  common = fs/afs.c;
-};
-
-module = {
-  name = bfs;
-  common = fs/bfs.c;
-};
-
-module = {
-  name = btrfs;
-  common = fs/btrfs.c;
-  common = lib/crc.c;
-  cflags = '$(CFLAGS_POSIX) -Wno-undef';
-  cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/minilzo -DMINILZO_HAVE_CONFIG_H';
 };
 
 module = {
@@ -1285,195 +758,8 @@ module = {
 };
 
 module = {
-  name = cpio_be;
-  common = fs/cpio_be.c;
-};
-
-module = {
-  name = newc;
-  common = fs/newc.c;
-};
-
-module = {
-  name = odc;
-  common = fs/odc.c;
-};
-
-module = {
-  name = ext2;
-  common = fs/ext2.c;
-};
-
-module = {
-  name = fat;
-  common = fs/fat.c;
-};
-
-module = {
-  name = exfat;
-  common = fs/exfat.c;
-};
-
-module = {
-  name = f2fs;
-  common = fs/f2fs.c;
-};
-
-module = {
-  name = fshelp;
-  common = fs/fshelp.c;
-};
-
-module = {
-  name = hfs;
-  common = fs/hfs.c;
-};
-
-module = {
-  name = hfsplus;
-  common = fs/hfsplus.c;
-};
-
-module = {
-  name = hfspluscomp;
-  common = fs/hfspluscomp.c;
-};
-
-module = {
-  name = iso9660;
-  common = fs/iso9660.c;
-};
-
-module = {
-  name = jfs;
-  common = fs/jfs.c;
-};
-
-module = {
-  name = minix;
-  common = fs/minix.c;
-};
-
-module = {
-  name = minix2;
-  common = fs/minix2.c;
-};
-
-module = {
-  name = minix3;
-  common = fs/minix3.c;
-};
-
-module = {
-  name = minix_be;
-  common = fs/minix_be.c;
-};
-
-module = {
-  name = minix2_be;
-  common = fs/minix2_be.c;
-};
-
-module = {
-  name = minix3_be;
-  common = fs/minix3_be.c;
-};
-
-module = {
-  name = nilfs2;
-  common = fs/nilfs2.c;
-};
-
-module = {
-  name = ntfs;
-  common = fs/ntfs.c;
-};
-
-module = {
-  name = ntfscomp;
-  common = fs/ntfscomp.c;
-};
-
-module = {
-  name = reiserfs;
-  common = fs/reiserfs.c;
-};
-
-module = {
-  name = romfs;
-  common = fs/romfs.c;
-};
-
-module = {
-  name = sfs;
-  common = fs/sfs.c;
-};
-
-module = {
-  name = squash4;
-  common = fs/squash4.c;
-  cflags = '$(CFLAGS_POSIX) -Wno-undef';
-  cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/xzembed -I$(srcdir)/lib/minilzo -DMINILZO_HAVE_CONFIG_H';
-};
-
-module = {
-  name = tar;
-  common = fs/tar.c;
-};
-
-module = {
-  name = udf;
-  common = fs/udf.c;
-};
-
-module = {
-  name = ufs1;
-  common = fs/ufs.c;
-};
-
-module = {
-  name = ufs1_be;
-  common = fs/ufs_be.c;
-};
-
-module = {
-  name = ufs2;
-  common = fs/ufs2.c;
-};
-
-module = {
-  name = xfs;
-  common = fs/xfs.c;
-};
-
-module = {
-  name = zfs;
-  common = fs/zfs/zfs.c;
-  common = fs/zfs/zfs_lzjb.c;
-  common = fs/zfs/zfs_lz4.c;
-  common = fs/zfs/zfs_sha256.c;
-  common = fs/zfs/zfs_fletcher.c;
-};
-
-module = {
-  name = zfscrypt;
-  common = fs/zfs/zfscrypt.c;
-};
-
-module = {
-  name = zfsinfo;
-  common = fs/zfs/zfsinfo.c;
-};
-
-module = {
   name = macbless;
   common = commands/macbless.c;
-};
-
-module = {
-  name = pxe;
-  i386_pc = net/drivers/i386/pc/pxe.c;
-  enable = i386_pc;
 };
 
 module = {
@@ -1482,32 +768,8 @@ module = {
 };
 
 module = {
-  name = gfxmenu;
-  common = gfxmenu/gfxmenu.c;
-  common = gfxmenu/view.c;
-  common = gfxmenu/font.c;
-  common = gfxmenu/icon_manager.c;
-  common = gfxmenu/theme_loader.c;
-  common = gfxmenu/widget-box.c;
-  common = gfxmenu/gui_canvas.c;
-  common = gfxmenu/gui_circular_progress.c;
-  common = gfxmenu/gui_box.c;
-  common = gfxmenu/gui_label.c;
-  common = gfxmenu/gui_list.c;
-  common = gfxmenu/gui_image.c;
-  common = gfxmenu/gui_progress_bar.c;
-  common = gfxmenu/gui_util.c;
-  common = gfxmenu/gui_string_util.c;
-};
-
-module = {
   name = hello;
   common = hello/hello.c;
-};
-
-module = {
-  name = gzio;
-  common = io/gzio.c;
 };
 
 module = {
@@ -1529,15 +791,13 @@ module = {
 };
 
 module = {
-  name = crypto;
-  common = lib/crypto.c;
-
-  extra_dist = lib/libgcrypt-grub/cipher/crypto.lst;
+  name = tar;
+  common = fs/tar.c;
 };
 
 module = {
-  name = pbkdf2;
-  common = lib/pbkdf2.c;
+  name = crypto;
+  common = lib/crypto.c;
 };
 
 module = {
@@ -1604,125 +864,9 @@ module = {
 };
 
 module = {
-  name = aout;
-  common = loader/aout.c;
-  enable = x86;
-};
-
-module = {
-  name = bsd;
-  x86 = loader/i386/bsd.c;
-  x86 = loader/i386/bsd32.c;
-  x86 = loader/i386/bsd64.c;
-
-  extra_dist = loader/i386/bsdXX.c;
-  extra_dist = loader/i386/bsd_pagetable.c;
-
-  enable = x86;
-};
-
-module = {
-  name = plan9;
-  i386_pc = loader/i386/pc/plan9.c;
-  enable = i386_pc;
-};
-
-
-module = {
-  name = linux16;
-  common = loader/i386/pc/linux.c;
-  enable = x86;
-};
-
-module = {
-  name = ntldr;
-  i386_pc = loader/i386/pc/ntldr.c;
-  enable = i386_pc;
-};
-
-
-module = {
   name = truecrypt;
   i386_pc = loader/i386/pc/truecrypt.c;
   enable = i386_pc;
-};
-
-
-module = {
-  name = freedos;
-  i386_pc = loader/i386/pc/freedos.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = pxechain;
-  i386_pc = loader/i386/pc/pxechainloader.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = multiboot2;
-  cppflags = "-DGRUB_USE_MULTIBOOT2";
-
-  common = loader/multiboot.c;
-  common = loader/multiboot_mbi2.c;
-  enable = x86;
-  enable = mips;
-};
-
-module = {
-  name = multiboot;
-  common = loader/multiboot.c;
-  x86 = loader/i386/multiboot_mbi.c;
-  extra_dist = loader/multiboot_elfxx.c;
-  enable = x86;
-};
-
-module = {
-  name = xen_boot;
-  arm64 = loader/arm64/xen_boot.c;
-  enable = arm64;
-};
-
-module = {
-  name = linux;
-  x86 = loader/i386/linux.c;
-  xen = loader/i386/xen.c;
-  i386_pc = lib/i386/pc/vesa_modes_table.c;
-  mips = loader/mips/linux.c;
-  powerpc_ieee1275 = loader/powerpc/ieee1275/linux.c;
-  sparc64_ieee1275 = loader/sparc64/ieee1275/linux.c;
-  ia64_efi = loader/ia64/efi/linux.c;
-  arm = loader/arm/linux.c;
-  arm64 = loader/arm64/linux.c;
-  common = loader/linux.c;
-  common = lib/cmdline.c;
-  enable = noemu;
-};
-
-module = {
-  name = fdt;
-  arm64 = loader/efi/fdt.c;
-  common = lib/fdt.c;
-  enable = fdt;
-};
-
-module = {
-  name = xnu;
-  x86 = loader/xnu_resume.c;
-  x86 = loader/i386/xnu.c;
-  x86 = loader/xnu.c;
-
-  /* Code is pretty generic but relies on RNG which
-     is available only on few platforms. It's not a
-     big deal as xnu needs ACPI anyway and we have
-     RNG on all platforms with ACPI.
-   */
-  enable = i386_multiboot;
-  enable = i386_coreboot;
-  enable = i386_pc;
-  enable = i386_efi;
-  enable = x86_64_efi;
 };
 
 module = {
@@ -1749,24 +893,6 @@ module = {
   common = loader/macho64.c;
   common = loader/lzss.c;
   extra_dist = loader/machoXX.c;
-};
-
-module = {
-  name = appleldr;
-  common = loader/efi/appleloader.c;
-  enable = i386_efi;
-  enable = x86_64_efi;
-};
-
-module = {
-  name = chain;
-  efi = loader/efi/chainloader.c;
-  i386_pc = loader/i386/pc/chainloader.c;
-  i386_coreboot = loader/i386/coreboot/chainloader.c;
-  i386_coreboot = lib/LzmaDec.c;
-  enable = i386_pc;
-  enable = i386_coreboot;
-  enable = efi;
 };
 
 module = {
@@ -1832,84 +958,6 @@ module = {
 };
 
 module = {
-  name = part_acorn;
-  common = partmap/acorn.c;
-};
-
-module = {
-  name = part_amiga;
-  common = partmap/amiga.c;
-};
-
-module = {
-  name = part_apple;
-  common = partmap/apple.c;
-};
-
-module = {
-  name = part_gpt;
-  common = partmap/gpt.c;
-};
-
-module = {
-  name = part_msdos;
-  common = partmap/msdos.c;
-};
-
-module = {
-  name = part_sun;
-  common = partmap/sun.c;
-};
-
-module = {
-  name = part_plan;
-  common = partmap/plan.c;
-};
-
-module = {
-  name = part_dvh;
-  common = partmap/dvh.c;
-};
-
-module = {
-  name = part_bsd;
-  common = partmap/bsdlabel.c;
-};
-
-module = {
-  name = part_sunpc;
-  common = partmap/sunpc.c;
-};
-
-module = {
-  name = part_dfly;
-  common = partmap/dfly.c;
-};
-
-module = {
-  name = msdospart;
-  common = parttool/msdospart.c;
-};
-
-module = {
-  name = at_keyboard;
-  common = term/at_keyboard.c;
-  common = term/ps2.c;
-  enable = x86;
-};
-
-module = {
-  name = gfxterm;
-  common = term/gfxterm.c;
-  enable = videomodules;
-};
-
-module = {
-  name = gfxterm_background;
-  common = term/gfxterm_background.c;
-};
-
-module = {
   name = serial;
   common = term/serial.c;
   x86 = term/ns8250.c;
@@ -1936,50 +984,10 @@ module = {
 };
 
 module = {
-  name = usb_keyboard;
-  common = term/usb_keyboard.c;
-  enable = usb;
-};
-
-module = {
-  name = vga;
-  common = video/i386/pc/vga.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = vga_text;
-  common = term/i386/pc/vga_text.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = mda_text;
-  common = term/i386/pc/mda_text.c;
-  enable = i386_pc;
-  enable = i386_coreboot_multiboot_qemu;
-};
-
-module = {
-  name = video_cirrus;
-  x86 = video/cirrus.c;
-  enable = x86;
-};
-
-module = {
-  name = video_bochs;
-  x86 = video/bochs.c;
-  enable = x86;
-};
-
-module = {
   name = functional_test;
   common = tests/lib/functional_test.c;
   common = tests/lib/test.c;
   common = tests/checksums.h;
-  common = tests/video_checksum.c;
-  common = tests/fake_input.c;
-  common = video/capture.c;
 };
 
 module = {
@@ -2006,16 +1014,6 @@ module = {
 module = {
   name = sleep_test;
   common = tests/sleep_test.c;
-};
-
-module = {
-  name = xnu_uuid_test;
-  common = tests/xnu_uuid_test.c;
-};
-
-module = {
-  name = pbkdf2_test;
-  common = tests/pbkdf2_test.c;
 };
 
 module = {
@@ -2065,186 +1063,13 @@ module = {
 };
 
 module = {
-  name = videotest_checksum;
-  common = tests/videotest_checksum.c;
-};
-
-module = {
-  name = gfxterm_menu;
-  common = tests/gfxterm_menu.c;
-};
-
-module = {
-  name = cmdline_cat_test;
-  common = tests/cmdline_cat_test.c;
-};
-
-module = {
-  name = bitmap;
-  common = video/bitmap.c;
-};
-
-module = {
-  name = bitmap_scale;
-  common = video/bitmap_scale.c;
-};
-
-module = {
-  name = efi_gop;
-  efi = video/efi_gop.c;
-  enable = efi;
-};
-
-module = {
-  name = efi_uga;
-  efi = video/efi_uga.c;
-  enable = i386_efi;
-  enable = x86_64_efi;
-};
-
-module = {
-  name = jpeg;
-  common = video/readers/jpeg.c;
-};
-
-module = {
-  name = png;
-  common = video/readers/png.c;
-};
-
-module = {
-  name = tga;
-  common = video/readers/tga.c;
-};
-
-module = {
-  name = vbe;
-  common = video/i386/pc/vbe.c;
-  enable = i386_pc;
-};
-
-module = {
-  name = video_fb;
-  common = video/fb/video_fb.c;
-  common = video/fb/fbblit.c;
-  common = video/fb/fbfill.c;
-  common = video/fb/fbutil.c;
-  enable = videomodules;
-};
-
-module = {
-  name = video;
-  common = video/video.c;
-  enable = videomodules;
-};
-
-module = {
-  name = video_colors;
-  common = video/colors.c;
-};
-
-module = {
-  name = ieee1275_fb;
-  ieee1275 = video/ieee1275.c;
-  enable = powerpc_ieee1275;
-};
-
-module = {
-  name = sdl;
-  emu = video/emu/sdl.c;
-  enable = emu;
-  condition = COND_GRUB_EMU_SDL;
-};
-
-module = {
   name = datehook;
   common = hook/datehook.c;
 };
 
 module = {
-  name = net;
-  common = net/net.c;
-  common = net/dns.c;
-  common = net/bootp.c;
-  common = net/ip.c;
-  common = net/udp.c;
-  common = net/tcp.c;
-  common = net/icmp.c;
-  common = net/icmp6.c;
-  common = net/ethernet.c;
-  common = net/arp.c;
-  common = net/netbuff.c;
-};
-
-module = {
-  name = tftp;
-  common = net/tftp.c;
-};
-
-module = {
-  name = http;
-  common = net/http.c;
-};
-
-module = {
-  name = ofnet;
-  common = net/drivers/ieee1275/ofnet.c;
-  enable = ieee1275;
-};
-
-module = {
-  name = ubootnet;
-  common = net/drivers/uboot/ubootnet.c;
-  enable = uboot;
-};
-
-module = {
-  name = efinet;
-  common = net/drivers/efi/efinet.c;
-  enable = efi;
-};
-
-module = {
-  name = emunet;
-  emu = net/drivers/emu/emunet.c;
-  enable = emu;
-};
-
-module = {
-  name = legacycfg;
-  common = commands/legacycfg.c;
-  common = lib/legacy_parse.c;
-  emu = lib/i386/pc/vesa_modes_table.c;
-  i386_efi = lib/i386/pc/vesa_modes_table.c;
-  x86_64_efi = lib/i386/pc/vesa_modes_table.c;
-  xen = lib/i386/pc/vesa_modes_table.c;
-
-  enable = i386_pc;
-  enable = i386_efi;
-  enable = x86_64_efi;
-  enable = emu;
-  enable = xen;
-};
-
-module = {
-  name = syslinuxcfg;
-  common = lib/syslinux_parse.c;
-  common = commands/syslinuxcfg.c;
-};
-
-module = {
   name = test_blockarg;
   common = tests/test_blockarg.c;
-};
-
-module = {
-  name = xzio;
-  common = io/xzio.c;
-  common = lib/xzembed/xz_dec_bcj.c;
-  common = lib/xzembed/xz_dec_lzma2.c;
-  common = lib/xzembed/xz_dec_stream.c;
-  cppflags = '-I$(srcdir)/lib/posix_wrap -I$(srcdir)/lib/xzembed';
-  cflags='-Wno-unreachable-code';
 };
 
 module = {
@@ -2316,36 +1141,6 @@ module = {
 };
 
 module = {
-  name = mpi;
-  common = lib/libgcrypt-grub/mpi/mpiutil.c;
-  common = lib/libgcrypt-grub/mpi/mpi-bit.c;
-  common = lib/libgcrypt-grub/mpi/mpi-add.c;
-  common = lib/libgcrypt-grub/mpi/mpi-mul.c;
-  common = lib/libgcrypt-grub/mpi/mpi-mod.c;
-  common = lib/libgcrypt-grub/mpi/mpi-gcd.c;
-  common = lib/libgcrypt-grub/mpi/mpi-div.c;
-  common = lib/libgcrypt-grub/mpi/mpi-cmp.c;
-  common = lib/libgcrypt-grub/mpi/mpi-inv.c;
-  common = lib/libgcrypt-grub/mpi/mpi-pow.c;
-  common = lib/libgcrypt-grub/mpi/mpi-mpow.c;
-  common = lib/libgcrypt-grub/mpi/mpih-lshift.c;
-  common = lib/libgcrypt-grub/mpi/mpih-mul.c;
-  common = lib/libgcrypt-grub/mpi/mpih-mul1.c;
-  common = lib/libgcrypt-grub/mpi/mpih-mul2.c;
-  common = lib/libgcrypt-grub/mpi/mpih-mul3.c;
-  common = lib/libgcrypt-grub/mpi/mpih-add1.c;
-  common = lib/libgcrypt-grub/mpi/mpih-sub1.c;
-  common = lib/libgcrypt-grub/mpi/mpih-div.c;
-  common = lib/libgcrypt-grub/mpi/mpicoder.c;
-  common = lib/libgcrypt-grub/mpi/mpih-rshift.c;
-  common = lib/libgcrypt-grub/mpi/mpi-inline.c;
-  common = lib/libgcrypt_wrap/mem.c;
-
-  cflags = '$(CFLAGS_GCRY) -Wno-redundant-decls -Wno-sign-compare';
-  cppflags = '$(CPPFLAGS_GCRY)';
-};
-
-module = {
   name = all_video;
   common = lib/fake_module.c;
 };
@@ -2386,3 +1181,4 @@ module = {
   common = loader/i386/xen_file64.c;
   extra_dist = loader/i386/xen_fileXX.c;
 };
+
