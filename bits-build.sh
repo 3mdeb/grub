@@ -1,6 +1,6 @@
-#! /bin/sh
+#!/bin/sh
 
-unexport HOSTCC CC LD OBJCOPY STRIP
+unset HOSTCC CC LD OBJCOPY STRIP
 
 cd build
 
