@@ -428,7 +428,7 @@ default_payload.elf: grub-mkstandalone grub-mkimage FORCE
 
 bits_payload.elf: grub-mkstandalone grub-mkimage FORCE
 	test -f $@ && rm $@ || true
-	rm -r boot
+	test -d boot && rm -r boot || true
 	cp -aL boot_memdisk boot
 	pkgdatadir=. ./grub-mkstandalone -v --grub-mkimage=./grub-mkimage -O i386-coreboot -o $@ --modules='serial cbfs' --install-modules='configfile ls search cbtime cbls memrw iorw minicmd lsmmap lspci halt reboot hexdump pcidump regexp setpci lsacpi test serial cat cbmemc echo help python mcu' --fonts= --themes= --locales= -d grub-core boot
 
