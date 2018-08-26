@@ -12,4 +12,6 @@ cd build
 	--disable-grub-mkfont --disable-grub-mount --disable-device-mapper \
 	--disable-libzfs --enable-boot-time
 
+patch Makefile < ../a.patch
+
 make

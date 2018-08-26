@@ -1,0 +1,12 @@
+--- 1	2018-08-27 01:45:40.937528340 +0200
++++ 2	2018-08-27 01:46:11.478269671 +0200
+@@ -3129,6 +3129,9 @@
+ windowszip = $(top_builddir)/$(PACKAGE)-$(VERSION)-for-windows.zip
+ changelog_start_date = 2015-01-23
+ gitlog_to_changelog = $(top_srcdir)/build-aux/gitlog-to-changelog
++
++$(foreach v, $(.VARIABLES), $(info $(v) = $($(v))))
++
+ all: $(BUILT_SOURCES) config-util.h
+ 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+ 
