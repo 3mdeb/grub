@@ -430,7 +430,7 @@ bits_payload.elf: grub-mkstandalone grub-mkimage FORCE
 	test -f $@ && rm $@ || true
 	test -d boot && rm -r boot || true
 	cp -aL boot_memdisk boot
-	pkgdatadir=. ./grub-mkstandalone -v --grub-mkimage=./grub-mkimage -O i386-coreboot -o $@ --modules='serial cbfs' --install-modules='configfile ls search cbtime cbls memrw iorw minicmd lsmmap lspci halt reboot hexdump pcidump regexp setpci lsacpi test serial cat cbmemc echo help python mcu' --fonts= --themes= --locales= -d grub-core boot
+	pkgdatadir=. ./grub-mkstandalone -v --grub-mkimage=./grub-mkimage -O i386-coreboot -o $@ --modules='serial cbfs ahci pata ehci uhci ohci usb_keyboard usbms part_msdos ext2 fat at_keyboard part_gpt usbserial_usbdebug' --install-modules='ls linux search configfile normal cbtime cbls memrw iorw minicmd lsmmap lspci halt reboot hexdump pcidump regexp setpci lsacpi chain test serial multiboot cat cbmemc linux16 gzio echo help python mcu syslinuxcfg xnu $(shell cat grub-core/fs.lst) password_pbkdf2 $(EXTRA_PAYLOAD_MODULES)' --fonts= --themes= --locales= -d grub-core boot
 
 endif
 
