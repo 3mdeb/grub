@@ -1,3 +1,10 @@
+grub2 (2.04-TrenchBoot) UNRELEASED; urgency=medium
+
+  [ Cezary Sobczak ]
+  * add slaunch module
+
+ -- Cezary Sobczak <cezary.sobczak@3mdeb.com>  Wed, 29 Apr 2020 08:53:11 +0200
+
 grub2 (2.04-6) unstable; urgency=medium
 
   [ Romain Perier ]

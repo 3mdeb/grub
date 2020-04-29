@@ -1,8 +1,8 @@
 Source: grub2
 Section: admin
 Priority: optional
-Maintainer: GRUB Maintainers <pkg-grub-devel@alioth-lists.debian.net>
-Uploaders: Felix Zielcke <fzielcke@z-51.de>, Jordi Mallach <jordi@debian.org>, Colin Watson <cjwatson@debian.org>, Ian Campbell <ijc@debian.org>, Steve McIntyre <93sam@debian.org>
+Maintainer: debian <debian@3mdeb.com>
+Uploaders: Felix Zielcke <fzielcke@z-51.de>, Jordi Mallach <jordi@debian.org>, Colin Watson <cjwatson@debian.org>, Ian Campbell <ijc@debian.org>, Steve McIntyre <93sam@debian.org> Cezary Sobczak <cezary.sobczak@3mdeb.com>
 Build-Depends: debhelper-compat (= 10),
  patchutils,
  python3,
@@ -36,9 +36,8 @@ Build-Depends: debhelper-compat (= 10),
  libefivar-dev [linux-i386 linux-amd64 linux-ia64 linux-arm linux-arm64],
 Build-Conflicts: autoconf2.13, libzfs-dev, libnvpair-dev
 Standards-Version: 3.9.6
-Homepage: https://www.gnu.org/software/grub/
-Vcs-Git: https://salsa.debian.org/grub-team/grub.git
-Vcs-Browser: https://salsa.debian.org/grub-team/grub
+Vcs-Git: https://github.com/3mdeb/grub2.git
+Vcs-Browser: https://github.com/3mdeb/grub2/tree/trenchboot_support_2.04
 Rules-Requires-Root: no
 
 Package: grub2
