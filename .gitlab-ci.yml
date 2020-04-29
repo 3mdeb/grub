@@ -24,6 +24,6 @@ build_nixpkg:
     GRUB_COMMIT: "$CI_COMMIT_SHA"
     GRUB_TAG: "$CI_COMMIT_REF_NAME"
   trigger:
-    project: trenchboot1/$GITLAB_GROUP/nixos-trenchboot-configs
+    project: trenchboot1/3mdeb/nixos-trenchboot-configs
     branch: master
     strategy: depend
