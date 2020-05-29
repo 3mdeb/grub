@@ -4,10 +4,10 @@ stages:
 build_and_install:
   image: debian:stable-20200414
   stage: build
-  except:
-    - debian
   tags:
     - local
+  except:
+    - debian
   before_script:
     - apt update && apt install -y build-essential bison flex python pkg-config autoconf automake git gettext autopoint libfuse-dev libdevmapper-dev libfreetype6-dev
   script:
@@ -35,6 +35,8 @@ build_nixpkg:
 build_debian_pkg:
   image: debian:bullseye-20200514
   stage: build
+  tags:
+    - local
   only:
     - debian
   before_script:
