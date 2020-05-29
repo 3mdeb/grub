@@ -2,8 +2,10 @@ stages:
   - build
 
 build_and_install:
-  stage: build
   image: debian:stable-20200414
+  stage: build
+  except:
+    - debian
   tags:
     - local
   before_script:
@@ -19,6 +21,8 @@ build_and_install:
 
 build_nixpkg:
   stage: build
+  except:
+    - debian
   variables:
     NIXPKG: "grub"
     GRUB_COMMIT: "$CI_COMMIT_SHA"
@@ -27,3 +31,20 @@ build_nixpkg:
     project: trenchboot1/3mdeb/nixos-trenchboot-configs
     branch: master
     strategy: depend
+
+build_debian_pkg:
+  image: debian:bullseye-20200514
+  stage: build
+  only:
+    - debian
+  before_script:
+    - ./.gitlab-ci/install-debian-build-deps.sh
+    - ln -s /usr/bin/python3 /usr/bin/python
+    - ./bootstrap.sh
+  script:
+    - dpkg-buildpackage -b -rfakeroot --target-arch i386 -us -uc
+    - mkdir artifacts && mv ../*.deb artifacts/
+    - dpkg -c artifacts/*.deb
+  artifacts:
+    paths:
+      - artifacts/*
