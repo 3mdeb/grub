@@ -40,7 +40,12 @@ build_debian_pkg:
   before_script:
     - ./.gitlab-ci/install-debian-build-deps.sh
     - ln -s /usr/bin/python3 /usr/bin/python
-    - ./bootstrap.sh
+    - ./bootstrap
+    - mknod /dev/loop0 -m0660 b 7 0
+    - mknod /dev/loop1 -m0660 b 7 1
+    - mknod /dev/loop2 -m0660 b 7 2
+    - mknod /dev/loop3 -m0660 b 7 3
+    - mknod /dev/loop4 -m0660 b 7 4
   script:
     - dpkg-buildpackage -b -rfakeroot --target-arch i386 -us -uc
     - mkdir artifacts && mv ../*.deb artifacts/
