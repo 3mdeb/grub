@@ -373,20 +373,20 @@ load_chewed (grub_file_t file, const char *filename)
 
       switch (segment.type)
 	{
-	case PAYLOAD_SEGMENT_PARAMS:
+	case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_PARAMS):
 	  break;
 
-	case PAYLOAD_SEGMENT_ENTRY:
+	case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_ENTRY):
 	  entry = grub_be_to_cpu64 (segment.load_addr);
 	  return GRUB_ERR_NONE;
 
-	case PAYLOAD_SEGMENT_BSS:
+	case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_BSS):
 	  segment.len = 0;
 	  segment.offset = 0;
 	  segment.len = 0;
 	  /* Fallthrough.  */
-	case PAYLOAD_SEGMENT_CODE:
-	case PAYLOAD_SEGMENT_DATA:
+	case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_CODE):
+	case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_DATA):
 	  {
 	    grub_uint32_t target = grub_be_to_cpu64 (segment.load_addr);
 	    grub_uint32_t memsize = grub_be_to_cpu32 (segment.mem_len);
@@ -467,11 +467,11 @@ grub_cmd_chain (grub_command_t cmd __attribute__ ((unused)),
     case ELFMAG0 | (ELFMAG1 << 8) | (ELFMAG2 << 16) | (ELFMAG3 << 24):
       err = load_elf (file, argv[0]);
       break;
-    case PAYLOAD_SEGMENT_CODE:
-    case PAYLOAD_SEGMENT_DATA:
-    case PAYLOAD_SEGMENT_PARAMS:
-    case PAYLOAD_SEGMENT_BSS:
-    case PAYLOAD_SEGMENT_ENTRY:
+    case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_CODE):
+    case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_DATA):
+    case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_PARAMS):
+    case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_BSS):
+    case grub_cpu_to_be32_compile_time (PAYLOAD_SEGMENT_ENTRY):
       err = load_chewed (file, argv[0]);
       break;
 
