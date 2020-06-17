@@ -111,38 +111,39 @@ grub_cbfs_find_file (struct grub_archelp_data *data, char **name,
       attrs_size = attributes_offset ? offset - attributes_offset : 0;
 
       if (attrs_size)
-      {
-	struct cbfs_file_attr_compression *att;
-	void *attrs;
-
-	attrs = grub_malloc (attrs_size);
-	if (attrs == NULL)
-	  return grub_errno;
-
-	if (grub_disk_read (data->disk, 0, data->hofs + attributes_offset,
-			    attrs_size, attrs))
-	  {
-	    grub_free (attrs);
-	    return grub_errno;
-	  }
-
-	att = (struct cbfs_file_attr_compression *) attrs;
-	while ((char *)att <=
-	       ((char *) attrs + attrs_size -
-		sizeof (struct cbfs_file_attr_compression)))
 	{
-	  if (att->tag !=
-	      grub_cpu_to_be32_compile_time (CBFS_FILE_ATTR_TAG_COMPRESSION))
-	  {
-	    att = (struct cbfs_file_attr_compression *)
-		  ((char *)att + grub_be_to_cpu32 (att->len));
-	    continue;
-	  }
+	  struct cbfs_file_attr_compression *att;
+	  void *attrs;
 
-	  data->compression = grub_be_to_cpu32 (att->compression);
-	  data->decompressed_size = grub_be_to_cpu32 (att->decompressed_size);
-	  break;
-	}
+	  attrs = grub_malloc (attrs_size);
+	  if (attrs == NULL)
+	    return grub_errno;
+
+	  if (grub_disk_read (data->disk, 0, data->hofs + attributes_offset,
+			      attrs_size, attrs))
+	    {
+	      grub_free (attrs);
+	      return grub_errno;
+	    }
+
+	  att = (struct cbfs_file_attr_compression *) attrs;
+	  while ((char *)att <=
+		 ((char *) attrs + attrs_size -
+		  sizeof (struct cbfs_file_attr_compression)))
+	    {
+	      if (att->tag !=
+		 grub_cpu_to_be32_compile_time (CBFS_FILE_ATTR_TAG_COMPRESSION))
+		{
+		  att = (struct cbfs_file_attr_compression *)
+			((char *)att + grub_be_to_cpu32 (att->len));
+		  continue;
+		}
+
+	      data->compression = grub_be_to_cpu32 (att->compression);
+	      data->decompressed_size =
+		    grub_be_to_cpu32 (att->decompressed_size);
+	      break;
+	    }
 	grub_free (attrs);
       }
 
@@ -349,7 +350,7 @@ grub_cbfs_read (grub_file_t file, char *buf, grub_size_t len)
 	  }
 
 	res = LzmaDecode (tmp, &dst_len, src + 13, &src_len,
-			  src, 5, LZMA_FINISH_END, &status, &g_Alloc);
+			  src, LZMA_PROPS_SIZE, LZMA_FINISH_END, &status, &g_Alloc);
 
 	if (len < data->decompressed_size || file->offset != 0)
 	  {
