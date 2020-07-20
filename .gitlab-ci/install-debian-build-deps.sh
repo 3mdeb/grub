@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "deb http://ftp.de.debian.org/debian stretch main" \
+>> /etc/apt/sources.list
 apt-get update
 apt-get -y install \
   build-essential \
