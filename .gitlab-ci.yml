@@ -51,7 +51,7 @@ build_debian_pkg:
   script:
     - dpkg-buildpackage -b -rfakeroot --target-arch i386 -us -uc
     - mkdir artifacts && mv ../*.deb artifacts/
-    - dpkg -c artifacts/*.deb
+    - ./.gitlab-ci/show-package-content.sh
   artifacts:
     paths:
       - artifacts/*
