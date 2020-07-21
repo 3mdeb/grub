@@ -38,8 +38,8 @@ git_pull:
   stage: git-robot
   tags:
     - local
-  except: 
-    - debian
+  only: 
+    - trenchboot_support_2.04
   before_script:
     - echo "machine github.com
               login 3mdeb-robot
