@@ -40,7 +40,7 @@ export LC_ALL
 # would cause trouble in at least one use below.
 (unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
-local_gl_dir=gl
+#local_gl_dir=gl
 
 # Honor $PERL, but work even if there is none.
 PERL="${PERL-perl}"
@@ -53,6 +53,8 @@ usage() {
   cat <<EOF
 Usage: $me [OPTION]...
 Bootstrap this package from the checked-out sources.
+
+
 
 Options:
  --gnulib-srcdir=DIRNAME  specify the local directory where gnulib
