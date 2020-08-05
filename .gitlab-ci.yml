@@ -38,7 +38,7 @@ git_pull:
   stage: git-robot
   tags:
     - local
-  only: 
+  only:
     - trenchboot_support_2.04
   before_script:
     - echo "machine github.com
