@@ -54,7 +54,7 @@ git_pull:
     - git push origin debian
 
 # For building debian package vfat and ext234 tests was
-# removed, because of error: 
+# removed, because of error:
 # "losetup: cannot find an unused loop device"
 
 build_debian_pkg:
