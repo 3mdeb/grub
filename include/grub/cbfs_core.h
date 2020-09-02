@@ -18,10 +18,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA, 02110-1301 USA
  * ---------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,21 +56,33 @@
 
 #define CBFS_COMPRESS_NONE  0
 #define CBFS_COMPRESS_LZMA  1
+#define CBFS_COMPRESS_LZ4   2
 
 /** These are standard component types for well known
     components (i.e - those that coreboot needs to consume.
     Users are welcome to use any other value for their
     components */
 
+#define CBFS_TYPE_DELETED    0x00000000
+#define CBFS_TYPE_DELETED2   0xffffffff
+#define CBFS_TYPE_BOOTBLOCK  0x01
 #define CBFS_TYPE_STAGE      0x10
-#define CBFS_TYPE_PAYLOAD    0x20
+#define CBFS_TYPE_SELF       0x20
+#define CBFS_TYPE_FIT        0x21
 #define CBFS_TYPE_OPTIONROM  0x30
 #define CBFS_TYPE_BOOTSPLASH 0x40
 #define CBFS_TYPE_RAW        0x50
 #define CBFS_TYPE_VSA        0x51
 #define CBFS_TYPE_MBI        0x52
 #define CBFS_TYPE_MICROCODE  0x53
+#define CBFS_TYPE_FSP        0x60
+#define CBFS_TYPE_MRC        0x61
+#define CBFS_TYPE_MMA        0x62
+#define CBFS_TYPE_EFI        0x63
+#define CBFS_TYPE_STRUCT     0x70
 #define CBFS_COMPONENT_CMOS_DEFAULT 0xaa
+#define CBFS_TYPE_SPD          0xab
+#define CBFS_TYPE_MRC_CACHE    0xac
 #define CBFS_COMPONENT_CMOS_LAYOUT 0x01aa
 
 #define CBFS_HEADER_MAGIC  0x4F524243
@@ -84,21 +92,23 @@
 
 #define CBFS_HEADER_INVALID_ADDRESS	((void*)(0xffffffff))
 
-/** this is the master cbfs header - it need to be located somewhere available
-    to bootblock (to load romstage).  Where it actually lives is up to coreboot.
-    On x86, a pointer to this header will live at 0xFFFFFFFC.
-    For other platforms, you need to define CONFIG_CBFS_HEADER_ROM_OFFSET */
+/* this is the master cbfs header - it must be located somewhere available
+ * to bootblock (to load romstage). The last 4 bytes in the image contain its
+ * relative offset from the end of the image (as a 32-bit signed integer). */
 
 struct cbfs_header {
 	grub_uint32_t magic;
 	grub_uint32_t version;
 	grub_uint32_t romsize;
 	grub_uint32_t bootblocksize;
-	grub_uint32_t align;
+	grub_uint32_t align; /* fixed to 64 bytes */
 	grub_uint32_t offset;
 	grub_uint32_t architecture;
 	grub_uint32_t pad[1];
 } GRUB_PACKED;
+
+/* this used to be flexible, but wasn't ever set to something different. */
+#define CBFS_ALIGNMENT 64
 
 /* "Unknown" refers to CBFS headers version 1,
  * before the architecture was defined (i.e., x86 only).
@@ -128,8 +138,56 @@ struct cbfs_file {
 	char magic[8];
 	grub_uint32_t len;
 	grub_uint32_t type;
-	grub_uint32_t checksum;
+	grub_uint32_t attributes_offset;
 	grub_uint32_t offset;
+} GRUB_PACKED;
+
+/* The common fields of extended cbfs file attributes.
+   Attributes are expected to start with tag/len, then append their
+   specific fields. */
+struct cbfs_file_attribute {
+       grub_uint32_t tag;
+       /* len covers the whole structure, incl. tag and len */
+       grub_uint32_t len;
+       grub_uint8_t data[0];
+} GRUB_PACKED;
+
+/* Depending on how the header was initialized, it may be backed with 0x00 or
+ * 0xff. Support both. */
+#define CBFS_FILE_ATTR_TAG_UNUSED 0
+#define CBFS_FILE_ATTR_TAG_UNUSED2 0xffffffff
+#define CBFS_FILE_ATTR_TAG_COMPRESSION 0x42435a4c
+#define CBFS_FILE_ATTR_TAG_HASH 0x68736148
+#define CBFS_FILE_ATTR_TAG_POSITION 0x42435350  /* PSCB */
+#define CBFS_FILE_ATTR_TAG_ALIGNMENT 0x42434c41 /* ALCB */
+#define CBFS_FILE_ATTR_TAG_IBB 0x32494242 /* Initial BootBlock */
+
+struct cbfs_file_attr_compression {
+       grub_uint32_t tag;
+       grub_uint32_t len;
+       /* whole file compression format. 0 if no compression. */
+       grub_uint32_t compression;
+       grub_uint32_t decompressed_size;
+} GRUB_PACKED;
+
+struct cbfs_file_attr_hash {
+       grub_uint32_t tag;
+       grub_uint32_t len;
+       grub_uint32_t hash_type;
+       /* hash_data is len - sizeof(struct) bytes */
+       grub_uint8_t  hash_data[];
+} GRUB_PACKED;
+
+struct cbfs_file_attr_position {
+       grub_uint32_t tag;
+       grub_uint32_t len;
+       grub_uint32_t position;
+} GRUB_PACKED;
+
+struct cbfs_file_attr_align {
+       grub_uint32_t tag;
+       grub_uint32_t len;
+       grub_uint32_t alignment;
 } GRUB_PACKED;
 
 /*** Component sub-headers ***/
@@ -164,11 +222,11 @@ struct cbfs_payload {
 	struct cbfs_payload_segment segments;
 };
 
-#define PAYLOAD_SEGMENT_CODE   0x45444F43
-#define PAYLOAD_SEGMENT_DATA   0x41544144
-#define PAYLOAD_SEGMENT_BSS    0x20535342
-#define PAYLOAD_SEGMENT_PARAMS 0x41524150
-#define PAYLOAD_SEGMENT_ENTRY  0x52544E45
+#define PAYLOAD_SEGMENT_CODE   0x434F4445
+#define PAYLOAD_SEGMENT_DATA   0x44415441
+#define PAYLOAD_SEGMENT_BSS    0x42535320
+#define PAYLOAD_SEGMENT_PARAMS 0x50415241
+#define PAYLOAD_SEGMENT_ENTRY  0x454E5452
 
 struct cbfs_optionrom {
 	grub_uint32_t compression;

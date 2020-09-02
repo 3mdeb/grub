@@ -26,6 +26,7 @@
 #include <grub/dl.h>
 #include <grub/i18n.h>
 #include <grub/cbfs_core.h>
+#include <grub/lib/LzmaDec.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -36,6 +37,8 @@ struct grub_archelp_data
   grub_off_t hofs, next_hofs;
   grub_off_t dofs;
   grub_off_t size;
+  grub_uint32_t compression;
+  grub_off_t decompressed_size;
   grub_off_t cbfs_start;
   grub_off_t cbfs_end;
   grub_off_t cbfs_align;
@@ -53,6 +56,7 @@ grub_cbfs_find_file (struct grub_archelp_data *data, char **name,
     {
       struct cbfs_file hd;
       grub_size_t namesize;
+      grub_size_t attrs_size, attributes_offset;
 
       data->hofs = data->next_hofs;
 
@@ -71,12 +75,15 @@ grub_cbfs_find_file (struct grub_archelp_data *data, char **name,
 	  return GRUB_ERR_NONE;
 	}
       data->size = grub_be_to_cpu32 (hd.len);
+      data->compression = CBFS_COMPRESS_NONE;
+      data->decompressed_size = 0;
       (void) mtime;
       offset = grub_be_to_cpu32 (hd.offset);
+      attributes_offset = grub_be_to_cpu32 (hd.attributes_offset);
 
       *mode = GRUB_ARCHELP_ATTR_FILE | GRUB_ARCHELP_ATTR_NOTIME;
 
-      namesize = offset;
+      namesize = attributes_offset ?: offset;
       if (namesize >= sizeof (hd))
 	namesize -= sizeof (hd);
       if (namesize == 0)
@@ -100,6 +107,45 @@ grub_cbfs_find_file (struct grub_archelp_data *data, char **name,
 	}
 
       (*name)[namesize] = 0;
+
+      attrs_size = attributes_offset ? offset - attributes_offset : 0;
+
+      if (attrs_size)
+	{
+	  struct cbfs_file_attr_compression *att;
+	  void *attrs;
+
+	  attrs = grub_malloc (attrs_size);
+	  if (attrs == NULL)
+	    return grub_errno;
+
+	  if (grub_disk_read (data->disk, 0, data->hofs + attributes_offset,
+			      attrs_size, attrs))
+	    {
+	      grub_free (attrs);
+	      return grub_errno;
+	    }
+
+	  att = (struct cbfs_file_attr_compression *) attrs;
+	  while ((char *)att <=
+		 ((char *) attrs + attrs_size -
+		  sizeof (struct cbfs_file_attr_compression)))
+	    {
+	      if (att->tag !=
+		 grub_cpu_to_be32_compile_time (CBFS_FILE_ATTR_TAG_COMPRESSION))
+		{
+		  att = (struct cbfs_file_attr_compression *)
+			((char *)att + grub_be_to_cpu32 (att->len));
+		  continue;
+		}
+
+	      data->compression = grub_be_to_cpu32 (att->compression);
+	      data->decompressed_size =
+		    grub_be_to_cpu32 (att->decompressed_size);
+	      break;
+	    }
+	grub_free (attrs);
+      }
 
       data->dofs = data->hofs + offset;
       data->next_hofs = ALIGN_UP (data->dofs + data->size, data->cbfs_align);
@@ -237,10 +283,21 @@ grub_cbfs_open (grub_file_t file, const char *name_in)
   else
     {
       file->data = data;
-      file->size = data->size;
+      file->size = data->decompressed_size ?: data->size;
+      file->not_easily_seekable = (data->compression != CBFS_COMPRESS_NONE);
     }
   return err;
 }
+
+static void *SzAlloc(void *p __attribute__ ((unused)), size_t size) { return grub_malloc (size); }
+static void SzFree(void *p __attribute__ ((unused)), void *address) { grub_free (address); }
+static ISzAlloc g_Alloc = { SzAlloc, SzFree };
+
+/* TODO: This will probably break if cbfs is used outside of cbfsdisk. In that
+ * case grub_disk_read() and another temporary buffer must be used instead of
+ * decompressing directly from cbfsdisk_addr. Can cbfs exist without cbfsdisk?
+ */
+static char *cbfsdisk_addr;
 
 static grub_ssize_t
 grub_cbfs_read (grub_file_t file, char *buf, grub_size_t len)
@@ -252,8 +309,77 @@ grub_cbfs_read (grub_file_t file, char *buf, grub_size_t len)
   data->disk->read_hook = file->read_hook;
   data->disk->read_hook_data = file->read_hook_data;
 
-  ret = (grub_disk_read (data->disk, 0, data->dofs + file->offset,
-			 len, buf)) ? -1 : (grub_ssize_t) len;
+  switch (data->compression)
+  {
+    case CBFS_COMPRESS_NONE:
+      ret = (grub_disk_read (data->disk, 0, data->dofs + file->offset,
+			     len, buf)) ? -1 : (grub_ssize_t) len;
+      break;
+
+    case CBFS_COMPRESS_LZMA:
+      {
+	grub_uint8_t *tmp;
+	SRes res;
+	SizeT src_len, dst_len;
+	ELzmaStatus status;
+	grub_uint8_t *src = (grub_uint8_t *) cbfsdisk_addr + data->dofs;
+
+	if (data->size < 13)
+	  {
+	    ret = grub_error (GRUB_ERR_BAD_OS, "invalid compressed chunk");
+	    break;
+	  }
+
+	src_len = data->size - 13;
+	dst_len = data->decompressed_size;
+
+	/* Write directly to target if reading from the beginning of the file
+	 * and buffer is big enough */
+	if (len < data->decompressed_size || file->offset != 0)
+	  {
+	    tmp = grub_malloc (data->decompressed_size);
+	    if (!tmp)
+	      {
+		ret = grub_errno;
+		break;
+	      }
+	  }
+	else
+	  {
+	    tmp = (grub_uint8_t *) buf;
+	  }
+
+	res = LzmaDecode (tmp, &dst_len, src + 13, &src_len,
+			  src, LZMA_PROPS_SIZE, LZMA_FINISH_END, &status, &g_Alloc);
+
+	if (len < data->decompressed_size || file->offset != 0)
+	  {
+	    ret = (len < (data->decompressed_size - file->offset)) ? len
+		  : (data->decompressed_size - file->offset);
+	    grub_memcpy (buf, tmp + file->offset, ret);
+	    grub_free (tmp);
+	  }
+	else
+	  {
+	    ret = (grub_ssize_t) dst_len;
+	  }
+
+	if (res != SZ_OK || src_len != data->size - 13
+	    || dst_len != data->decompressed_size)
+	  {
+	    grub_error (GRUB_ERR_BAD_OS, "LZMA failure %d (status %d)",
+			res, status);
+	    ret = -1;
+	  }
+
+	break;
+      }
+    default:
+      grub_error (GRUB_ERR_BAD_OS, "unimplemented compression method %d",
+		  data->compression);
+      ret = -1;
+  }
+
   data->disk->read_hook = 0;
 
   return ret;
@@ -273,7 +399,7 @@ grub_cbfs_close (grub_file_t file)
 #if (defined (__i386__) || defined (__x86_64__)) && !defined (GRUB_UTIL) \
   && !defined (GRUB_MACHINE_EMU) && !defined (GRUB_MACHINE_XEN)
 
-static char *cbfsdisk_addr;
+//static char *cbfsdisk_addr;
 static grub_off_t cbfsdisk_size = 0;
 
 static int

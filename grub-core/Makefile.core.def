@@ -1355,6 +1355,11 @@ module = {
 };
 
 module = {
+  name = lzma;
+  common = lib/LzmaDec.c;
+};
+
+module = {
   name = cpio;
   common = fs/cpio.c;
 };
@@ -1867,7 +1872,6 @@ module = {
   efi = loader/efi/chainloader.c;
   i386_pc = loader/i386/pc/chainloader.c;
   i386_coreboot = loader/i386/coreboot/chainloader.c;
-  i386_coreboot = lib/LzmaDec.c;
   enable = i386_pc;
   enable = i386_coreboot;
   enable = efi;

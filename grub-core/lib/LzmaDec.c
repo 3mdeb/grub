@@ -24,6 +24,9 @@
  * See <http://www.7-zip.org>, for more information about LZMA.
  */
 
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #include <grub/lib/LzmaDec.h>
 
 #pragma GCC diagnostic ignored "-Wshadow"
