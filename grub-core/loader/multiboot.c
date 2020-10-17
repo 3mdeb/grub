@@ -162,11 +162,6 @@ efi_boot (struct grub_relocator *rel __attribute__ ((unused)),
 static void
 normal_boot (struct grub_relocator *rel, struct grub_relocator32_state state)
 {
-#ifdef GRUB_USE_MULTIBOOT2
-  if (grub_slaunch_get_modules())
-    grub_slaunch_mb2_boot(rel, state);
-#endif
-
   grub_relocator32_boot (rel, state, 0);
 }
 #else
@@ -193,6 +188,11 @@ grub_multiboot_boot (void)
 
   if (err)
     return err;
+
+  #ifdef GRUB_USE_MULTIBOOT2
+    if (grub_slaunch_get_modules())
+      grub_slaunch_mb2_boot(GRUB_MULTIBOOT (relocator), state);
+  #endif
 
   if (grub_efi_is_finished)
     normal_boot (GRUB_MULTIBOOT (relocator), state);
