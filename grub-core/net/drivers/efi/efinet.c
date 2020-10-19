@@ -23,6 +23,7 @@
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
 #include <grub/i18n.h>
+#include <grub/misc.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -75,7 +76,6 @@ send_card_buffer (struct grub_net_card *dev,
 		   dev->txbuf, NULL, NULL, NULL);
   if (st != GRUB_EFI_SUCCESS)
     return grub_error (GRUB_ERR_IO, N_("couldn't send network packet"));
-
   /*
      The card may have sent out the packet immediately - set txbusy
      to 0 in this case.
@@ -107,9 +107,9 @@ get_card_packet (struct grub_net_card *dev)
 	dev->rcvbuf = grub_malloc (dev->rcvbufsize);
       if (!dev->rcvbuf)
 	return NULL;
-
       st = efi_call_7 (net->receive, net, NULL, &bufsize,
 		       dev->rcvbuf, NULL, NULL, NULL);
+      grub_dprintf ("efinet", "%lx bytes\n", __FUNCTION__, bufsize);
       if (st != GRUB_EFI_BUFFER_TOO_SMALL)
 	break;
       dev->rcvbufsize = 2 * ALIGN_UP (dev->rcvbufsize > bufsize
@@ -295,8 +295,9 @@ grub_efinet_findcards (void)
 	  return;
 	}
 
+      grub_dprintf ("efinet", "%s: max packet size %x\n", __FUNCTION__, net->mode->max_packet_size);
       card->mtu = net->mode->max_packet_size;
-      card->txbufsize = ALIGN_UP (card->mtu, 64) + 256;
+      card->txbufsize = card->mtu + net->mode->media_header_size;
       card->txbuf = grub_zalloc (card->txbufsize);
       if (!card->txbuf)
 	{
@@ -307,7 +308,9 @@ grub_efinet_findcards (void)
 	}
       card->txbusy = 0;
 
-      card->rcvbufsize = ALIGN_UP (card->mtu, 64) + 256;
+      card->rcvbufsize = card->mtu + net->mode->media_header_size;
+
+      grub_dprintf ("efinet", "%s network card tx/rx buf size is %lx", __FUNCTION__, card->rcvbufsize);
 
       card->name = grub_xasprintf ("efinet%d", i++);
       card->driver = &efidriver;
