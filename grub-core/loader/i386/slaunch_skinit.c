@@ -338,5 +338,5 @@ grub_slaunch_mb2_boot (struct grub_relocator *rel, struct grub_relocator32_state
   grub_tis_request_locality(0xff);  // relinquish all localities
 
   grub_dprintf("slaunch", "Invoke SKINIT\r\n");
-  return grub_relocator_skinit_boot (rel, grub_slaunch_get_modules()->target, 0);
+  return grub_relocator_skinit_boot (rel, grub_slaunch_get_modules()->target, 1);
 }
