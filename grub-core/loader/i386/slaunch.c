@@ -33,6 +33,14 @@
 GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_uint32_t slp = SLP_NONE;
+static struct grub_slaunch_module *modules = NULL, *modules_last = NULL;
+static struct grub_relocator *relocator = NULL;
+
+struct grub_slaunch_module*
+grub_slaunch_get_modules( void)
+{
+  return modules;
+}
 
 static void *slaunch_module = NULL;
 
@@ -49,12 +57,52 @@ grub_slaunch_module (void)
 }
 
 static grub_err_t
+grub_slaunch_add_module (void *addr, grub_addr_t target, grub_size_t size)
+{
+  struct grub_slaunch_module *newmod;
+
+  newmod = grub_malloc (sizeof (*newmod));
+  if (!newmod)
+    return grub_errno;
+  newmod->addr = (grub_uint8_t*)addr;
+  newmod->target = target;
+  newmod->size = size;
+  newmod->next = 0;
+
+  if (modules_last)
+    modules_last->next = newmod;
+  else
+    modules = newmod;
+  modules_last = newmod;
+
+  return GRUB_ERR_NONE;
+}
+
+static void
+grub_slaunch_free (void)
+{
+  struct grub_slaunch_module *cur, *next;
+
+  for (cur = modules; cur; cur = next)
+    {
+      next = cur->next;
+      grub_free (cur);
+    }
+  modules = NULL;
+  modules_last = NULL;
+
+  grub_relocator_unload (relocator);
+  relocator = NULL;
+}
+
+static grub_err_t
 grub_cmd_slaunch (grub_command_t cmd __attribute__ ((unused)),
 		  int argc __attribute__ ((unused)),
 		  char *argv[] __attribute__ ((unused)))
 {
   grub_uint32_t manufacturer[3];
-  grub_uint32_t eax;
+  grub_uint32_t eax, ebx, ecx, edx;
+  grub_uint64_t msr_value;
   grub_err_t err;
 
   if (!grub_cpu_is_cpuid_supported ())
@@ -76,6 +124,20 @@ grub_cmd_slaunch (grub_command_t cmd __attribute__ ((unused)),
 
       slp = SLP_INTEL_TXT;
     }
+  else if (!grub_memcmp (manufacturer, "AuthenticAMD", 12))
+    {
+
+      grub_cpuid (GRUB_AMD_CPUID_FEATURES, eax, ebx, ecx, edx);
+      if (! (ecx & GRUB_SVM_CPUID_FEATURE) )
+        return grub_error (GRUB_ERR_BAD_DEVICE, N_("CPU does not support AMD SVM"));
+
+      /* Check whether SVM feature is disabled in BIOS */
+      msr_value = grub_rdmsr (GRUB_MSR_AMD64_VM_CR);
+      if (msr_value & GRUB_MSR_SVM_VM_CR_SVM_DISABLE)
+        return grub_error (GRUB_ERR_BAD_DEVICE, N_("BIOS has AMD SVM disabled"));
+
+      slp = SLP_AMD_SKINIT;
+    }
   else
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, N_("CPU is unsupported"));
 
@@ -88,6 +150,10 @@ grub_cmd_slaunch_module (grub_command_t cmd __attribute__ ((unused)),
 {
   grub_file_t file;
   grub_ssize_t size;
+  grub_err_t err;
+  grub_relocator_chunk_t ch;
+  void *slaunch_module_addr = NULL;
+  grub_addr_t slaunch_module_target;
 
   if (!argc)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
@@ -96,6 +162,13 @@ grub_cmd_slaunch_module (grub_command_t cmd __attribute__ ((unused)),
     return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("secure launch not enabled"));
 
   grub_errno = GRUB_ERR_NONE;
+
+  if (! relocator)
+  {
+    relocator = grub_relocator_new ();
+    if (! relocator)
+      return grub_errno;
+  }
 
   file = grub_file_open (argv[0], GRUB_FILE_TYPE_SLAUNCH_MODULE);
 
@@ -110,12 +183,24 @@ grub_cmd_slaunch_module (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  slaunch_module = grub_malloc (size);
-
-  if (slaunch_module == NULL)
+  err = grub_relocator_alloc_chunk_align (relocator, &ch,
+					  0, (0xffffffff - size) + 1,
+					  size > 0x10000 ? size : 0x10000, /* Alloc at least 64k */
+					  0x10000,	/* SLB must be 64k aligned */
+					  GRUB_RELOCATOR_PREFERENCE_LOW, 1);
+  if (err)
     goto fail;
 
-  if (grub_file_read (file, slaunch_module, size) != size)
+  slaunch_module_addr = get_virtual_current_address (ch);
+  slaunch_module_target = get_physical_target_address (ch);
+
+  err = grub_slaunch_add_module (slaunch_module_addr,
+				 slaunch_module_target,
+				 size);
+  if (err)
+    goto fail;
+
+  if (grub_file_read (file, slaunch_module_addr, size) != size)
     {
       if (grub_errno == GRUB_ERR_NONE)
 	grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file: %s"),
@@ -167,7 +252,10 @@ grub_cmd_slaunch_state (grub_command_t cmd __attribute__ ((unused)),
       grub_printf ("Secure launcher: Intel TXT\n");
       grub_txt_state_show ();
     }
-
+  else if (slp == SLP_AMD_SKINIT)
+    {
+      grub_printf ("Secure launcher: AMD SKINIT\n");
+    }
   return GRUB_ERR_NONE;
 }
 
@@ -185,6 +273,7 @@ GRUB_MOD_INIT (slaunch)
 
 GRUB_MOD_FINI (slaunch)
 {
+  grub_slaunch_free ();
   grub_unregister_command (cmd_slaunch_state);
   grub_unregister_command (cmd_slaunch_module);
   grub_unregister_command (cmd_slaunch);

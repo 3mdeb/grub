@@ -799,6 +799,18 @@ grub_linux_boot (void)
       state.ecx = slparams.sinit_acm_size;
       state.edx = 0;
     }
+  else if (state.edi == SLP_AMD_SKINIT)
+    {
+      slparams.params = ctx.params;
+      slparams.real_mode_target = ctx.real_mode_target;
+      slparams.prot_mode_target = prot_mode_target;
+      slparams.relocator = relocator;
+
+      err = grub_slaunch_boot_skinit (&slparams);
+
+      if (err != GRUB_ERR_NONE)
+	return err;
+    }
   else
     {
       /* FIXME.  */

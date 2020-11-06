@@ -24,6 +24,7 @@
 /* Secure launch platform types. */
 #define SLP_NONE	0
 #define SLP_INTEL_TXT	1
+#define SLP_AMD_SKINIT	2
 
 #define GRUB_SLAUNCH_TPM_EVT_LOG_SIZE	(8 * GRUB_PAGE_SIZE)
 
@@ -31,6 +32,12 @@
 
 #include <grub/i386/linux.h>
 #include <grub/types.h>
+#include <grub/i386/relocator.h>
+
+#define GRUB_SL_BOOTPARAMS_OFFSET	0x12c
+#define GRUB_SL_ZEROPAGE_OFFSET	0x14
+#define GRUB_SL_EVENTLOG_ADDR_OFFSET	0x18
+#define GRUB_SL_EVENTLOG_SIZE_OFFSET	0x1c
 
 struct grub_slaunch_params
 {
@@ -46,10 +53,27 @@ struct grub_slaunch_params
   grub_uint32_t sinit_acm_size;
   grub_uint64_t tpm_evt_log_base;
   grub_uint32_t tpm_evt_log_size;
+  grub_addr_t real_mode_target;
+  grub_addr_t prot_mode_target;
+  struct grub_relocator *relocator;
 };
+
+struct grub_slaunch_module
+{
+  struct grub_slaunch_module *next;
+  grub_uint8_t *addr;
+  grub_addr_t target;
+  grub_size_t size;
+};
+
+struct grub_slaunch_module *grub_slaunch_get_modules (void);
+
+grub_err_t grub_slaunch_boot_skinit (struct grub_slaunch_params *slparams);
+grub_err_t grub_slaunch_mb2_boot (struct grub_relocator *rel, struct grub_relocator32_state state);
 
 extern grub_uint32_t grub_slaunch_platform_type (void);
 extern void *grub_slaunch_module (void);
+
 
 #endif /* ASM_FILE */
 
