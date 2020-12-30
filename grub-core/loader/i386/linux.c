@@ -824,7 +824,7 @@ grub_linux_boot (void)
       slparams.lz_base = (grub_uint32_t) get_virtual_current_address (ch);
       slparams.lz_size = grub_skinit_get_sl_size ();
 
-      err = grub_skinit_boot_prepare (&slparams);
+      err = grub_skinit_boot_prepare (&slparams, GRUB_SKINIT_PROTO_LINUX);
 
       if (err != GRUB_ERR_NONE)
 	return err;

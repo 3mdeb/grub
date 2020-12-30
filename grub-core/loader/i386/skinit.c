@@ -63,7 +63,7 @@ struct lz_tag_boot_linux {
 struct lz_tag_boot_mb2 {
   struct lz_tag_hdr hdr;
   grub_uint32_t mbi;
-	grub_uint32_t kernel_entry;
+  grub_uint32_t kernel_entry;
   grub_uint32_t kernel_size;
 } __attribute__ (( packed ));
 
@@ -91,7 +91,7 @@ static inline void *next_tag(struct lz_tag_tags_size *tags)
 }
 
 grub_err_t
-grub_skinit_boot_prepare (struct grub_slaunch_params *slparams)
+grub_skinit_boot_prepare (struct grub_slaunch_params *slparams, grub_uint8_t pr)
 {
   void *lz_base = (void *)(grub_addr_t) slparams->lz_base;
   grub_memset (lz_base, 0, GRUB_SKINIT_SLB_SIZE);
@@ -130,20 +130,38 @@ grub_skinit_boot_prepare (struct grub_slaunch_params *slparams)
   }
 
   /* Boot protocol data */
-  struct lz_tag_boot_linux *b = next_tag(tags);
-  b->hdr.type = LZ_TAG_BOOT_LINUX;
-  b->hdr.len = sizeof(struct lz_tag_boot_linux);
-  b->zero_page = (grub_uint32_t)slparams->params;
-  tags->size += b->hdr.len;
+  if (pr == GRUB_SKINIT_PROTO_LINUX)
+    {
+      struct lz_tag_boot_linux *b = next_tag(tags);
+      b->hdr.type = LZ_TAG_BOOT_LINUX;
+      b->hdr.len = sizeof(struct lz_tag_boot_linux);
+      b->zero_page = (grub_uint32_t)slparams->params;
+      tags->size += b->hdr.len;
+    }
+  else if (pr == GRUB_SKINIT_PROTO_MB2)
+    {
+      struct lz_tag_boot_mb2 *b = next_tag(tags);
+      b->hdr.type = LZ_TAG_BOOT_MB2;
+      b->hdr.len = sizeof(struct lz_tag_boot_mb2);
+      b->mbi = (grub_uint32_t)slparams->params;
+      /* When 0, LZ will parse image load base from MBI */
+      b->kernel_entry = 0;
+      /* When 0, LZ will parse ELF symbols from MBI */
+      b->kernel_size = 0;
+      tags->size += b->hdr.len;
+    }
+  else
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown boot protocol");
 
-  if (slparams->tpm_evt_log_size != 0) {
-    struct lz_tag_evtlog *e = next_tag(tags);
-    e->hdr.type = LZ_TAG_EVENT_LOG;
-    e->hdr.len = sizeof(struct lz_tag_evtlog);
-    e->address = slparams->tpm_evt_log_base;
-    e->size = slparams->tpm_evt_log_size;
-    tags->size += e->hdr.len;
-  }
+  if (slparams->tpm_evt_log_size != 0)
+    {
+      struct lz_tag_evtlog *e = next_tag(tags);
+      e->hdr.type = LZ_TAG_EVENT_LOG;
+      e->hdr.len = sizeof(struct lz_tag_evtlog);
+      e->address = slparams->tpm_evt_log_base;
+      e->size = slparams->tpm_evt_log_size;
+      tags->size += e->hdr.len;
+    }
 
   /* Mark end of tags */
   struct lz_tag_hdr *end = next_tag(tags);
